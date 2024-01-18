@@ -4,7 +4,7 @@
 
 int main() {
 
-  Game g("/Users/herman.genis/CLionProjects/assignment2/config.txt");
+  Game g("config.txt");
   g.run();
 
   return 0;

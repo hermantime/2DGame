@@ -6,17 +6,34 @@
 
 #include "components.h"
 #include <string>
+#include <iostream>
 
 class Entity {
 
   friend class EntityManager;
 
+  enum {E_BULLET, E_ENEMY, E_PLAYER} type;
   bool        m_active = true;
   size_t      m_id = 0;
   std::string m_tag = "default";
 
-  Entity(size_t id, const std::string& tag) : m_id(id), m_tag(tag) {}
+  Entity(size_t id, const std::string& tag) : m_id(id), m_tag(tag)
+  {
+    switch (tag[0])
+    {
+      case 'b':
+        type = Entity::E_BULLET;
+        break;
+      case 'e':
+        type = Entity::E_ENEMY;
+        break;
+      case 'p':
+        type = Entity::E_PLAYER;
+        break;
+    }
+  }
   ~Entity() {
+    std::cout << "Bullet destroy\n";
     delete cTransform;
     delete cShape;
     delete cCollision;

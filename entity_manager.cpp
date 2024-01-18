@@ -16,26 +16,26 @@ void EntityManager::update() // called at each frame by engine
   for (Entity* e : m_toAdd)
   {
     m_entities.push_back(e);
-    m_entityMap[e->m_tag].push_back(e);
   }
   m_toAdd.clear();
-  auto erase = [](EntityVec& v) {v.erase(std::remove_if(v.begin(), v.end(),
-                                  [](Entity*& e) {
-                                          if (!e->m_active) {
-                                            delete e;
-                                            e = nullptr;
-                                            return true;
-                                          }
-                                          return false; }),
-                                         v.end());};
-  erase(m_entities);
-  for (auto& pair : m_entityMap)
-    erase(pair.second);
+
+  for (int i = 0; i < m_entities.size(); ++i)
+    if (!m_entities[i]->m_active)
+    {
+      delete m_entities[i];
+      m_entities.erase(m_entities.begin()+i);
+    }
 }
 
 EntityVec& EntityManager::getEntities() { return m_entities; }
-EntityVec& EntityManager::getEntities(const std::string & tag) { return m_entityMap[tag]; }
-
+EntityVec EntityManager::getEntities(const std::string& tag)
+{
+  EntityVec filtered {};
+  std::copy_if(m_entities.begin(), m_entities.end(), std::back_inserter(filtered), [&tag](const Entity* e) {
+    return e->m_tag == tag;
+  });
+  return filtered;
+}
 void EntityManager::cleanEntities()
 {
   for (auto& e : m_entities)

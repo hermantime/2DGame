@@ -218,7 +218,15 @@ void Game::sEnemyCollision()
 
 void Game::sCollision()
 {
-
+  for (Entity*& bullet : m_entities.getEntities("bullet"))
+  {
+    sf::Vector2 bPos = bullet->cShape->circle.getPosition();
+    if (bPos.x < 0 || bPos.x > m_window.getSize().x || bPos.y < 0 || bPos.y > m_window.getSize().y)
+    {
+      bullet->destroy();
+      std::cout << "Bullet out of bounds\n";
+    }
+  }
 }
 
 void Game::spawnPlayer()

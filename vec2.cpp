@@ -73,3 +73,19 @@ float Vec2::length() const
 {
   return sqrt(x * x + y * y);
 }
+
+void Vec2::normalize()
+{
+  float factor = sqrt(x * x + y * y);
+  if (factor != 0.0)
+  {
+    x /= factor;
+    y /= factor;
+  }
+}
+
+void Vec2::scale(float c)
+{
+  x *= c;
+  y *= c;
+}

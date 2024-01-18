@@ -13,7 +13,7 @@ set(SFML_LIBRARY_DIR /opt/homebrew/Cellar/sfml/2.6.1/lib)
 find_package(SFML 2.6.1 COMPONENTS graphics audio REQUIRED)
 
 # Add your source files
-add_executable(assignment2 main.cpp vec2.cpp vec2.h components.h entity_manager.cpp entity_manager.h entity.cpp entity.h game.cpp game.h math.cpp math.h)
+add_executable(assignment2 main.cpp vec2.cpp vec2.h components.h entity_manager.cpp entity_manager.h entity.h game.cpp game.h math.cpp math.h)
 
 # Include SFML headers
 target_include_directories(assignment2 PRIVATE ${SFML_INCLUDE_DIR})

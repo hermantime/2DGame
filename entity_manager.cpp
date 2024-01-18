@@ -38,6 +38,6 @@ EntityVec& EntityManager::getEntities(const std::string & tag) { return m_entity
 
 void EntityManager::cleanEntities()
 {
-  for (Entity*& e : m_entities)
+  for (auto& e : m_entities)
     delete e;
 }

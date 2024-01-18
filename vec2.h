@@ -26,6 +26,9 @@ public:
   void operator *= (const Vec2&);
   void operator /= (const Vec2&);
 
-  float dist  (const Vec2&) const;
-  float length()            const;
+  [[nodiscard]] float dist  (const Vec2&) const;
+  [[nodiscard]] float length()            const;
+
+  void normalize();
+  void scale    (float);
 };

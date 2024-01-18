@@ -11,6 +11,7 @@ public:
   float angle;
 
   CTransform(const Vec2& p, const Vec2& vel, float a) : pos(p), velocity(vel), angle(a) {}
+  ~CTransform() = default;
 };
 
 class CShape
@@ -26,6 +27,7 @@ public:
     circle.setOutlineThickness(thickness);
     circle.setOrigin(rad, rad);
   }
+  ~CShape() = default;
 };
 
 class CCollision // collision radius of the shape
@@ -33,6 +35,7 @@ class CCollision // collision radius of the shape
 public:
   float radius;
   explicit CCollision(float rad) : radius(rad) {}
+  ~CCollision() = default;
 };
 
 class CScore // number of sides * 100 (large) or number of sides * 200 (small)
@@ -40,6 +43,7 @@ class CScore // number of sides * 100 (large) or number of sides * 200 (small)
 public:
   int score;
   explicit CScore(int s) : score(s) {}
+  ~CScore() = default;
 };
 
 class CLifespan
@@ -49,6 +53,7 @@ public:
   int total_frames;     // the total initial amount of lifespan
 
   explicit CLifespan(int frameCount) :remaining_frames(frameCount), total_frames(frameCount) {}
+  ~CLifespan() = default;
 };
 
 class CInput // tracks whether we are pressing keys / if object has this - it is controllable by us
@@ -61,4 +66,5 @@ public:
   bool shoot {};
 
   CInput() = default;
+  ~CInput() = default;
 };

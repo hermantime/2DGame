@@ -1,5 +1,4 @@
 #include "game.h"
-//#include "/Users/herman.genis/CLionProjects/assignment2/math.h"
 
 #include <cassert>
 #include <fstream>

@@ -1,8 +1,7 @@
-
-
 #include "game.h"
-#include "/Users/herman.genis/CLionProjects/assignment2/math.h"
+//#include "/Users/herman.genis/CLionProjects/assignment2/math.h"
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -77,7 +76,7 @@ void Game::init(const std::string& config)
   m_bulletConfig.B_O_COLOR_R     = std::stoi(x.at(43));
   m_bulletConfig.B_O_COLOR_G     = std::stoi(x.at(44));
   m_bulletConfig.B_O_COLOR_B     = std::stoi(x.at(45));
-  m_bulletConfig.B_O_THICKNESS   = std::stoi(x.at(46));
+  m_bulletConfig.B_O_THICKNESS   = std::stof(x.at(46));
   m_bulletConfig.B_SHAPE_VERT    = std::stoi(x.at(47));
   m_bulletConfig.B_LIFE          = std::stoi(x.at(48));
 
@@ -107,10 +106,12 @@ void Game::sMovement()
   {
     m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
   }
-
-  for (Entity* bullet : m_entities.getEntities("bullet"))
+  for (Entity* e : m_entities.getEntities())
   {
-    bullet->cTransform->pos += bullet->cTransform->velocity;
+    if (e->type != Entity::E_PLAYER)
+    {
+      e->cTransform->pos += e->cTransform->velocity;
+    }
   }
 }
 
@@ -128,6 +129,9 @@ void Game::sUserInput()
     {
       switch (event.key.code)
       {
+        case sf::Keyboard::P:
+          m_paused = !m_paused;
+          break;
         case sf::Keyboard::W:
           m_player->cInput->up = true;
           break;
@@ -141,6 +145,7 @@ void Game::sUserInput()
           m_player->cInput->right = true;
           break;
         case sf::Keyboard::E: // special ability
+          spawnSpecialWeapon(m_player);
           break;
         default:
           break;
@@ -174,7 +179,7 @@ void Game::sUserInput()
       }
     }
 
-    if (event.type == sf::Event::MouseButtonPressed)
+    if (event.type == sf::Event::MouseButtonPressed && !m_paused)
     {
       switch (event.mouseButton.button)
       {
@@ -188,7 +193,15 @@ void Game::sUserInput()
 
 void Game::sLifespan()
 {
-
+  for (Entity*& e : m_entities.getEntities())
+  {
+    if (e->type != Entity::E_PLAYER)
+    {
+      e->cLifespan->remaining_frames--;
+      if (e->cLifespan->remaining_frames == 0)
+        e->destroy();
+    }
+  }
 }
 
 void Game::sRender()
@@ -211,27 +224,120 @@ void Game::sEnemySpawner()
     spawnEnemy();
 }
 
-void Game::sEnemyCollision()
+void Game::sBorderCollision()
 {
-
-}
-
-void Game::sCollision()
-{
-  for (Entity*& bullet : m_entities.getEntities("bullet"))
+  for (Entity*& entity : m_entities.getEntities())
   {
-    sf::Vector2 bPos = bullet->cShape->circle.getPosition();
-    if (bPos.x < 0 || bPos.x > m_window.getSize().x || bPos.y < 0 || bPos.y > m_window.getSize().y)
+    if (!entity->isActive())
     {
-      bullet->destroy();
-      std::cout << "Bullet out of bounds\n";
+      continue;
+    }
+    Vec2* ePos = &entity->cTransform->pos;
+    float rad = entity->cShape->circle.getRadius();
+    for (Entity*& entity2 : m_entities.getEntities())
+    {
+      Vec2* e2Pos = &entity2->cTransform->pos;
+      float e2Rad = entity2->cShape->circle.getRadius();
+      if (entity->type == Entity::E_BULLET && entity2->type == Entity::E_ENEMY)
+      {
+        if (ePos->dist(*e2Pos) < (rad+e2Rad)*(rad+e2Rad))
+        {
+          entity->destroy();
+          entity2->destroy();
+        }
+      }
+      else if (entity->type == Entity::E_PLAYER && entity2->type == Entity::E_ENEMY)
+      {
+        if (ePos->dist(*e2Pos) < (rad+e2Rad)*(rad+e2Rad))
+        {
+          std::cout << "Reset impl\n";
+        }
+      }
+      else if (entity->type == Entity::E_ENEMY && entity2->type == Entity::E_ENEMY && entity != entity2)
+      {
+        if (ePos->dist(*e2Pos) < (rad+e2Rad)*(rad+e2Rad))
+        {
+          Vec2 nVec = Vec2(ePos->x-e2Pos->x, ePos->y-e2Pos->y);
+          nVec.normalize();
+          Vec2 tVec = Vec2(-nVec.y, nVec.x); // perp to normal vec
+          float dotNorm1 = nVec.x * entity->cTransform->velocity.x + nVec.y * entity->cTransform->velocity.y;
+          float dotTan1  = tVec.x * entity->cTransform->velocity.x + tVec.y * entity->cTransform->velocity.y;
+          float dotNorm2 = nVec.x * entity2->cTransform->velocity.x + nVec.y * entity2->cTransform->velocity.y;
+          float dotTan2  = tVec.x * entity2->cTransform->velocity.x + tVec.y * entity2->cTransform->velocity.y;
+          float p1 = (dotNorm1 * (rad - e2Rad) + 2.0f * e2Rad * dotNorm2) / (rad + e2Rad);
+          float p2 = (dotNorm2 * (e2Rad - rad) + 2.0f * rad * dotNorm1) / (rad + e2Rad);
+          entity->cTransform->velocity.x = tVec.x * dotTan1 + nVec.x * p1;
+          entity->cTransform->velocity.y = tVec.y * dotTan1 + nVec.y * p1;
+          entity2->cTransform->velocity.x = tVec.x * dotTan2 + nVec.x * p2;
+          entity2->cTransform->velocity.y = tVec.y * dotTan2 + nVec.y * p2;
+        }
+      }
+    }
+    switch (entity->type)
+    {
+      case Entity::E_BULLET: {
+        if (ePos->x < 0 || ePos->x > m_window.getSize().x || ePos->y < 0 || ePos->y > m_window.getSize().y) {
+          entity->destroy();
+        }
+        break;
+      }
+      case Entity::E_ENEMY: { // treating everything as circle, add shape functionality later
+        if (ePos->x < rad)
+        {
+          std::cout << "Enemy wall collision\n";
+          entity->cTransform->pos.x = rad;
+          entity->cTransform->velocity.x *= -1;
+        }
+        else if (ePos->x > m_window.getSize().x-rad)
+        {
+          std::cout << "Enemy wall collision\n";
+          entity->cTransform->pos.x = m_window.getSize().x-rad;
+          entity->cTransform->velocity.x *= -1;
+        }
+        if (ePos->y < rad)
+        {
+          std::cout << "Enemy wall collision\n";
+          entity->cTransform->pos.y = rad;
+          entity->cTransform->velocity.y *= -1;
+        }
+        else if (ePos->y > m_window.getSize().y-rad)
+        {
+          std::cout << "Enemy wall collision\n";
+          entity->cTransform->pos.y = m_window.getSize().y-rad;
+          entity->cTransform->velocity.y *= -1;
+        }
+        break;
+      }
+      case Entity::E_PLAYER: {
+        if (ePos->x < -rad)
+        {
+          std::cout << "Travel-through: px - border\n";
+          entity->cTransform->pos.x = m_window.getSize().x + rad - entity->cShape->circle.getOutlineThickness();
+        }
+        else if (ePos->x > m_window.getSize().x+rad)
+        {
+          std::cout << "Travel-through: px - border\n";
+          entity->cTransform->pos.x = -rad + entity->cShape->circle.getOutlineThickness();
+        }
+        if (ePos->y < -rad)
+        {
+          std::cout << "Travel-through: py - border\n";
+          entity->cTransform->pos.y = m_window.getSize().y + rad - entity->cShape->circle.getOutlineThickness();
+        }
+        else if (ePos->y > m_window.getSize().y+rad)
+        {
+          std::cout << "Travel-through: py - border\n";
+          entity->cTransform->pos.y = -rad + entity->cShape->circle.getOutlineThickness();
+        }
+        break;
+      }
     }
   }
 }
 
 void Game::spawnPlayer()
 {
-  Entity* player = m_entities.addEntity("player");
+  Entity* player = m_entities.addEntity(Entity::E_PLAYER);
   Vec2 pos = Vec2(static_cast<float>(m_window.getSize().x)/2, static_cast<float>(m_window.getSize().y)/2);
   player->cTransform = new CTransform(pos, Vec2(m_playerConfig.P_SPEED, m_playerConfig.P_SPEED), 0.0);
   player->cShape = new CShape(m_playerConfig.P_SHAPE_RAD, m_playerConfig.P_SHAPE_VERT, sf::Color(m_playerConfig.P_F_COLOR_R, m_playerConfig.P_F_COLOR_G, m_playerConfig.P_F_COLOR_B), sf::Color(m_playerConfig.P_O_COLOR_R, m_playerConfig.P_O_COLOR_G, m_playerConfig.P_O_COLOR_B), m_playerConfig.P_O_THICKNESS);
@@ -241,20 +347,23 @@ void Game::spawnPlayer()
   m_player = player;
 }
 
-void Game::spawnEnemy()
+void Game::spawnEnemy() // direction, normalize, scale, add
 {
   // spawn enemy with config variables, within bounds of window
-  Entity* enemy = m_entities.addEntity("enemy");
+  Entity* enemy = m_entities.addEntity(Entity::E_ENEMY);
   auto r = [](int l, int u) { return rand() % (u-l)+l; };
-  Vec2 pos = Vec2(r(0+m_enemyConfig.E_SHAPE_RAD,m_window.getSize().x-m_enemyConfig.E_SHAPE_RAD), r(0+m_enemyConfig.E_SHAPE_RAD,m_window.getSize().y-m_enemyConfig.E_SHAPE_RAD));
-  Vec2 vel = Vec2(r(m_enemyConfig.E_MIN_SPEED, m_enemyConfig.E_MAX_SPEED), r(m_enemyConfig.E_MIN_SPEED, m_enemyConfig.E_MAX_SPEED));
-
+  float rad = m_enemyConfig.E_SHAPE_RAD;
+  Vec2 pos(r(rad, m_window.getSize().x-rad), r(rad, m_window.getSize().y-rad));
+  Vec2 vel(r(m_enemyConfig.E_MIN_SPEED, m_enemyConfig.E_MAX_SPEED), r(m_enemyConfig.E_MIN_SPEED, m_enemyConfig.E_MAX_SPEED));
+  float angle = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) * 2.0f * M_PI;
+  vel.x = std::cos(angle) * r(2,7);
+  vel.y = std::sin(angle) * r(2,7);
   enemy->cTransform = new CTransform(pos, vel, r(0, m_enemyConfig.E_MAX_VERTICES));
   enemy->cShape = new CShape(m_enemyConfig.E_SHAPE_RAD, r(m_enemyConfig.E_MIN_VERTICES, m_enemyConfig.E_MAX_VERTICES), sf::Color(m_enemyConfig.E_O_COLOR_R, m_enemyConfig.E_O_COLOR_G, m_enemyConfig.E_O_COLOR_B), sf::Color(m_enemyConfig.E_O_COLOR_R, m_enemyConfig.E_O_COLOR_G, m_enemyConfig.E_O_COLOR_B), m_enemyConfig.E_O_THICKNESS);
   enemy->cShape->circle.setOrigin(m_enemyConfig.E_SHAPE_RAD, m_enemyConfig.E_SHAPE_RAD);
   enemy->cCollision = new CCollision(m_enemyConfig.E_COLLISION_RAD);
   enemy->cScore = new CScore(r(100, m_enemyConfig.E_MAX_VERTICES * 200));
-  enemy->cLifespan = new CLifespan(r(m_enemyConfig.E_SMALL_LIFE, m_enemyConfig.E_SMALL_LIFE * 60));
+  enemy->cLifespan = new CLifespan(r(m_enemyConfig.E_SMALL_LIFE, m_enemyConfig.E_SMALL_LIFE * 10));
   m_lastEnemySpawnTime = m_currentFrame;
 }
 
@@ -265,7 +374,7 @@ void Game::spawnSmallEnemies(Entity* entity) // when enemy die spawn this
 
 void Game::spawnBullet(Entity* entity, const Vec2& target)
 {
-  Entity* bullet = m_entities.addEntity("bullet");
+  Entity* bullet = m_entities.addEntity(Entity::E_BULLET);
   Vec2 entityPos = Vec2(entity->cShape->circle.getPosition().x, entity->cShape->circle.getPosition().y);
   Vec2 bulletSpawn = target - entityPos;
   bulletSpawn.normalize();
@@ -291,15 +400,16 @@ void Game::run()
   while (m_running) // add pause functionality in here, ends game
   {
     m_entities.update();
+    sRender();
+    sUserInput();
     if (!m_paused)
     {
-      //sEnemySpawner();
-      sUserInput();
+      sEnemySpawner();
+      sBorderCollision();
       sMovement();
-      sCollision();
+      sLifespan();
       m_currentFrame++; // move when implement 'pause'
     }
-    sRender(); // still works, nothing else does, shapes move
   }
   m_entities.cleanEntities();
 }

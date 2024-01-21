@@ -1,7 +1,3 @@
-//
-// Created by Herman Genis on 1/4/24.
-//
-
 #include "math.h"
 #include "vec2.h"
 
@@ -64,9 +60,14 @@ void Vec2::operator /= (const Vec2& rhs)
   y /= rhs.y;
 }
 
-float Vec2::dist(const Vec2& other) const
+float Vec2::sdist(const Vec2& other) const
 {
   return sqrt(pow(other.x - x) + pow(other.y - y));
+}
+
+float Vec2::dist(const Vec2& other) const
+{
+  return (other.x - x) * (other.x - x) + (other.y - y) * (other.y - y);
 }
 
 float Vec2::length() const
@@ -88,4 +89,10 @@ void Vec2::scale(float c)
 {
   x *= c;
   y *= c;
+}
+
+void Vec2::abs()
+{
+  x = x > 0 ? x : x * -1;
+  y = y > 0 ? y : y * -1;
 }

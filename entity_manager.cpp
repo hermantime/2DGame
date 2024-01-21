@@ -1,19 +1,15 @@
-//
-// Created by Herman Genis on 1/4/24.
-//
-
 #include "entity_manager.h"
 
-Entity *EntityManager::addEntity(const std::string& tag)
+Entity *EntityManager::addEntity(Entity::Type tag)
 {
   Entity* entity = new Entity(m_totalEntities++, tag);
   m_toAdd.push_back(entity);
   return entity;
 }
 
-void EntityManager::update() // called at each frame by engine
+void EntityManager::update()
 {
-  for (Entity* e : m_toAdd)
+  for (Entity*& e : m_toAdd)
   {
     m_entities.push_back(e);
   }
@@ -28,11 +24,11 @@ void EntityManager::update() // called at each frame by engine
 }
 
 EntityVec& EntityManager::getEntities() { return m_entities; }
-EntityVec EntityManager::getEntities(const std::string& tag)
+EntityVec EntityManager::getEntities(Entity::Type e_type)
 {
   EntityVec filtered {};
-  std::copy_if(m_entities.begin(), m_entities.end(), std::back_inserter(filtered), [&tag](const Entity* e) {
-    return e->m_tag == tag;
+  std::copy_if(m_entities.begin(), m_entities.end(), std::back_inserter(filtered), [&e_type](const Entity* e) {
+    return e->type == e_type;
   });
   return filtered;
 }

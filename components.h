@@ -1,6 +1,6 @@
 #pragma once
 
-#include </opt/homebrew/Cellar/sfml/2.6.1/include/SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp>
 #include "vec2.h"
 
 class CTransform // x:y position, x:y velocity, turning angle

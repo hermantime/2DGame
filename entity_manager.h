@@ -15,10 +15,10 @@ class EntityManager
 
 public:
   EntityManager() = default;
-  Entity* addEntity(const std::string&);
+  Entity*    addEntity(Entity::Type);
 
   EntityVec& getEntities  ();
-  EntityVec  getEntities  (const std::string&);
+  EntityVec  getEntities  (Entity::Type);
   void       update       ();
   void       cleanEntities();
 };

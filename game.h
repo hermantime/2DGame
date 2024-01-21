@@ -35,7 +35,8 @@ class Game
   void sRender        ();
   void sEnemySpawner  ();
   void sEnemyCollision();
-  void sCollision     ();
+  void sBulletCollision();
+  void sBorderCollision     ();
 
   void spawnPlayer       ();
   void spawnEnemy        ();

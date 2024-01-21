@@ -27,8 +27,10 @@ public:
   void operator /= (const Vec2&);
 
   [[nodiscard]] float dist  (const Vec2&) const;
+  [[nodiscard]] float sdist (const Vec2&) const;
   [[nodiscard]] float length()            const;
 
   void normalize();
   void scale    (float);
+  void abs      ();
 };

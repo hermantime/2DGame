@@ -27,24 +27,22 @@ class Game
   Entity* m_player;
 
   void init     (const std::string&);
-  void setPaused(bool paused);
 
   void sMovement      ();
   void sUserInput     ();
   void sLifespan      ();
   void sRender        ();
   void sEnemySpawner  ();
-  void sEnemyCollision();
-  void sBulletCollision();
-  void sBorderCollision     ();
+  void sCollision     ();
 
   void spawnPlayer       ();
   void spawnEnemy        ();
   void spawnSmallEnemies (Entity* entity);
   void spawnBullet       (Entity* entity, const Vec2& mousePos);
   void spawnSpecialWeapon(Entity* entity);
+  void lockOnTarget      (Entity* entity);
 
 public:
   explicit Game(const std::string&);
-  void run();
+  void     run();
 };

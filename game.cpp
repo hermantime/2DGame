@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <iostream>
-
  Game::Game(const std::string& config)
 {
   init(config);
@@ -83,11 +81,6 @@ void Game::init(const std::string& config)
   spawnPlayer(); // guaranteed to be the first in the entity array
 }
 
-void Game::setPaused(bool paused)
-{
-  m_paused = paused; // m_paused = m_paused ? false : true; + remove arg
-}
-
 void Game::sMovement()
 {
   if (m_player->cInput->up)
@@ -144,8 +137,11 @@ void Game::sUserInput()
         case sf::Keyboard::D:
           m_player->cInput->right = true;
           break;
-        case sf::Keyboard::E: // special ability
+        case sf::Keyboard::E:
           spawnSpecialWeapon(m_player);
+          break;
+        case sf::Keyboard::R:
+          lockOnTarget(m_player);
           break;
         default:
           break;
@@ -224,7 +220,7 @@ void Game::sEnemySpawner()
     spawnEnemy();
 }
 
-void Game::sBorderCollision()
+void Game::sCollision()
 {
   for (Entity*& entity : m_entities.getEntities())
   {
@@ -236,6 +232,10 @@ void Game::sBorderCollision()
     float rad = entity->cShape->circle.getRadius();
     for (Entity*& entity2 : m_entities.getEntities())
     {
+      if (!entity2->isActive() || entity == entity2)
+      {
+        continue;
+      }
       Vec2* e2Pos = &entity2->cTransform->pos;
       float e2Rad = entity2->cShape->circle.getRadius();
       if (entity->type == Entity::E_BULLET && entity2->type == Entity::E_ENEMY)
@@ -253,13 +253,14 @@ void Game::sBorderCollision()
           std::cout << "Reset impl\n";
         }
       }
-      else if (entity->type == Entity::E_ENEMY && entity2->type == Entity::E_ENEMY && entity != entity2)
+      else if (entity->type == Entity::E_ENEMY && entity2->type == Entity::E_ENEMY)
       {
         if (ePos->dist(*e2Pos) < (rad+e2Rad)*(rad+e2Rad))
         {
+          std::cout << "Enemy enemy collision\n";
           Vec2 nVec = Vec2(ePos->x-e2Pos->x, ePos->y-e2Pos->y);
           nVec.normalize();
-          Vec2 tVec = Vec2(-nVec.y, nVec.x); // perp to normal vec
+          Vec2 tVec = Vec2(-nVec.y, nVec.x);
           float dotNorm1 = nVec.x * entity->cTransform->velocity.x + nVec.y * entity->cTransform->velocity.y;
           float dotTan1  = tVec.x * entity->cTransform->velocity.x + tVec.y * entity->cTransform->velocity.y;
           float dotNorm2 = nVec.x * entity2->cTransform->velocity.x + nVec.y * entity2->cTransform->velocity.y;
@@ -347,7 +348,7 @@ void Game::spawnPlayer()
   m_player = player;
 }
 
-void Game::spawnEnemy() // direction, normalize, scale, add
+void Game::spawnEnemy()
 {
   // spawn enemy with config variables, within bounds of window
   Entity* enemy = m_entities.addEntity(Entity::E_ENEMY);
@@ -369,7 +370,11 @@ void Game::spawnEnemy() // direction, normalize, scale, add
 
 void Game::spawnSmallEnemies(Entity* entity) // when enemy die spawn this
 {
+  for (int i = 0; i < entity->cShape->circle.getPointCount(); ++i)
+  {
+    Entity* shrapnel = m_entities.addEntity(Entity::E_ENEMY);
 
+  }
 }
 
 void Game::spawnBullet(Entity* entity, const Vec2& target)
@@ -390,9 +395,29 @@ void Game::spawnBullet(Entity* entity, const Vec2& target)
   bullet->cLifespan  = new CLifespan(m_bulletConfig.B_LIFE);
 }
 
-void Game::spawnSpecialWeapon(Entity* entity)
+void Game::spawnSpecialWeapon(Entity* entity) // does not yet account for collisions
 {
+  EntityVec enemies = m_entities.getEntities(Entity::E_ENEMY);
+  if (enemies.empty()) return;
+  CTransform* closest = enemies.at(0)->cTransform;
+  CTransform* player = entity->cTransform;
+  for (int i = 1; i < enemies.size(); ++i)
+  {
+    if (player->pos.dist(closest->pos) > player->pos.dist(enemies[i]->cTransform->pos))
+    {
+      closest = enemies[i]->cTransform;
+    }
+  }
+  Vec2 futurePos;
+  float correction = std::sqrt(std::pow(closest->pos.x-player->pos.x,2)+std::pow(closest->pos.y-player->pos.y,2)) / m_bulletConfig.B_SPEED;
+  futurePos.x = closest->pos.x + closest->velocity.x * correction;
+  futurePos.y = closest->pos.y + closest->velocity.y * correction;
+  spawnBullet(entity, futurePos);
+}
 
+void Game::lockOnTarget(Entity* entity) // "heat-seeker" bullet
+{
+  
 }
 
 void Game::run()
@@ -405,7 +430,7 @@ void Game::run()
     if (!m_paused)
     {
       sEnemySpawner();
-      sBorderCollision();
+      sCollision();
       sMovement();
       sLifespan();
       m_currentFrame++; // move when implement 'pause'

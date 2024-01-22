@@ -1,4 +1,5 @@
 #include "game.h"
+//#include "/Users/herman.genis/CLionProjects/assignment2/math.h"
 
 #include <cassert>
 #include <fstream>
@@ -40,6 +41,14 @@ void Game::init(const std::string& config)
   int FONT_R          = std::stoi(x.at(8));
   int FONT_G          = std::stoi(x.at(9));
   int FONT_B          = std::stoi(x.at(10));
+
+  m_font = sf::Font();
+  m_font.loadFromFile("/Users/herman.genis/CLionProjects/assignment2/Lato-Regular.ttf");
+  m_text.setFont(m_font);
+  m_text.setFillColor(sf::Color(FONT_R, FONT_G, FONT_B));
+  m_text.setCharacterSize(FONT_SIZE);
+  m_text.setString(std::to_string(m_score));
+  m_text.setPosition(20,20);
   
   m_playerConfig.P_SHAPE_RAD     = std::stof(x.at(12));
   m_playerConfig.P_COLLISION_RAD = std::stof(x.at(13));
@@ -210,6 +219,8 @@ void Game::sRender()
     e->cShape->circle.setRotation(e->cTransform->angle);
     m_window.draw(e->cShape->circle);
   }
+  m_text.setString(std::to_string(m_score));
+  m_window.draw(m_text);
   m_window.display();
 }
 
@@ -241,6 +252,7 @@ void Game::sCollision()
       {
         if (ePos->dist(*e2Pos) < (rad+e2Rad)*(rad+e2Rad))
         {
+          m_score += entity2->cScore->score;
           entity->destroy();
           entity2->destroy();
         }
@@ -249,7 +261,18 @@ void Game::sCollision()
       {
         if (ePos->dist(*e2Pos) < (rad+e2Rad)*(rad+e2Rad))
         {
-          std::cout << "Reset impl\n";
+          for (Entity* e : m_entities.getEntities())
+          {
+            if (e->type == Entity::E_PLAYER)
+            {
+              e->cTransform->pos = Vec2(m_window.getSize().x/2, m_window.getSize().y/2);
+              m_score = 0;
+            }
+            else
+            {
+              e->destroy();
+            }
+          }
         }
       }
       else if (entity->type == Entity::E_ENEMY && entity2->type == Entity::E_ENEMY)
@@ -362,7 +385,8 @@ void Game::spawnEnemy()
   enemy->cShape = new CShape(m_enemyConfig.E_SHAPE_RAD, r(m_enemyConfig.E_MIN_VERTICES, m_enemyConfig.E_MAX_VERTICES), sf::Color(m_enemyConfig.E_O_COLOR_R, m_enemyConfig.E_O_COLOR_G, m_enemyConfig.E_O_COLOR_B), sf::Color(m_enemyConfig.E_O_COLOR_R, m_enemyConfig.E_O_COLOR_G, m_enemyConfig.E_O_COLOR_B), m_enemyConfig.E_O_THICKNESS);
   enemy->cShape->circle.setOrigin(m_enemyConfig.E_SHAPE_RAD, m_enemyConfig.E_SHAPE_RAD);
   enemy->cCollision = new CCollision(m_enemyConfig.E_COLLISION_RAD);
-  enemy->cScore = new CScore(r(100, m_enemyConfig.E_MAX_VERTICES * 200));
+  enemy->cScore = new CScore(std::abs(m_enemyConfig.E_MAX_VERTICES * vel.x * vel.y / m_enemyConfig.E_MIN_VERTICES)+10);
+  std::cout << "Score " << enemy->cScore->score << "\n";
   enemy->cLifespan = new CLifespan(r(m_enemyConfig.E_SMALL_LIFE, m_enemyConfig.E_SMALL_LIFE * 10));
   m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -416,7 +440,7 @@ void Game::spawnSpecialWeapon(Entity* entity) // does not yet account for collis
 
 void Game::lockOnTarget(Entity* entity) // "heat-seeker" bullet
 {
-  
+
 }
 
 void Game::run()

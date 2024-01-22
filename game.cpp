@@ -293,6 +293,8 @@ void Game::sCollision()
           entity->cTransform->velocity.y = tVec.y * dotTan1 + nVec.y * p1;
           entity2->cTransform->velocity.x = tVec.x * dotTan2 + nVec.x * p2;
           entity2->cTransform->velocity.y = tVec.y * dotTan2 + nVec.y * p2;
+          entity->cTransform->pos += entity->cTransform->velocity;
+          entity2->cTransform->pos += entity2->cTransform->velocity;
         }
       }
     }
